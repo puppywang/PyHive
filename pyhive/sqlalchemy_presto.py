@@ -39,6 +39,9 @@ _type_map = {
     'timestamp': types.TIMESTAMP,
     'date': types.DATE,
     'varbinary': types.VARBINARY,
+    'array': types.String,
+    'row': types.String,
+    'map': types.String,
 }
 
 
@@ -146,9 +149,13 @@ class PrestoDialect(default.DefaultDialect):
         result = []
         for row in rows:
             try:
-                coltype = _type_map[row.Type]
+                # Take out the more detailed type information
+                # e.g. 'varchar(128)' -> 'varchar'
+                #      'decimal(10,1)' -> decimal
+                row_type = re.search(r'^\w+', row.Type).group(0)
+                coltype = _type_map[row_type]
             except KeyError:
-                util.warn("Did not recognize type '%s' of column '%s'" % (row.Type, row.Column))
+                util.warn("Did not recognize type '%s' of column '%s'" % (row_type, row.Column))
                 coltype = types.NullType
             result.append({
                 'name': row.Column,
